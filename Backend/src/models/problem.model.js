@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import slugify from "slugify";
+import mongooseLeanVirtuals from "mongoose-lean-virtuals";
 
 const problemSchema = new mongoose.Schema(
   {
@@ -8,6 +10,7 @@ const problemSchema = new mongoose.Schema(
       minlength: 5,
       maxlength: 100,
       trim: true,
+      unique: true,
     },
     description: {
       type: String,
@@ -20,21 +23,23 @@ const problemSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
-    examples: [
-      {
-        input: {
-          type: String,
-          required: true,
+    examples: {
+      type: [
+        {
+          input: {
+            type: String,
+            required: true,
+          },
+          output: {
+            type: String,
+            required: true,
+          },
+          explanation: {
+            type: String,
+          },
         },
-        output: {
-          type: String,
-          required: true,
-        },
-        explanation: {
-          type: String,
-        },
-      },
-    ],
+      ],
+    },
     tags: {
       type: [String],
       default: [],
@@ -70,12 +75,93 @@ const problemSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    likes: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
+      default: [],
+    },
+    dislikes: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+      ],
+      default: [],
+    },
+    timelimit: {
+      type: Number,
+      required: true,
+      default: 1,
+      min: 1,
+      max: 10,
+    },
+    memorylimit: {
+      type: Number,
+      required: true,
+      default: 256,
+      min: 32,
+      max: 2048,
+    },
+    slug: {
+      type: String,
+      unique: true,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive", "archived"],
+      default: "active",
+    },
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+problemSchema.virtual("likesCount").get(function () {
+  return this.likes.length;
+});
+
+problemSchema.virtual("dislikesCount").get(function () {
+  return this.dislikes.length;
+});
 
 problemSchema.index({ tags: 1 });
 problemSchema.index({ tags: 1, difficulty: 1 });
 problemSchema.index({ title: "text", description: "text" });
+problemSchema.index({ createdAt: -1 });
+
+problemSchema.pre("remove", async function (next) {
+  await mongoose.model("Discussion").deleteMany({ problem: this._id });
+  await mongoose.model("Submission").deleteMany({ problem: this._id });
+  next();
+});
+
+problemSchema.post("findOneAndDelete", async function (doc) {
+  if (doc) {
+    await mongoose.model("Discussion").deleteMany({ problem: doc._id });
+    await mongoose.model("Submission").deleteMany({ problem: doc._id });
+  }
+});
+
+problemSchema.pre("validate", async function (next) {
+  if (!this.slug && this.title) {
+    const rawSlug = slugify(this.title, {
+      lower: true,
+      strict: true,
+    });
+    let counter = 1;
+    let slug = rawSlug;
+    while (await mongoose.model("Problem").exists({ slug })) {
+      slug = `${rawSlug}-${counter++}`;
+    }
+    this.slug = slug;
+  }
+});
+
+problemSchema.plugin(mongooseLeanVirtuals);
 
 export default mongoose.model("Problem", problemSchema);

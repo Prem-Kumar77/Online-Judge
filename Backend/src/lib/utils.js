@@ -10,7 +10,7 @@ const generateToken = (user, res) => {
     role: user.role,
   };
 
-  const token = JWT.sign(payload, process.env.JWT_SECRET, { expiresIn: "15m" });
+  const token = JWT.sign(payload, process.env.JWT_SECRET, { expiresIn: "7d" });
   const refreshToken = JWT.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
     expiresIn: "7d",
   });

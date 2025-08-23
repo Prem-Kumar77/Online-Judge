@@ -4,8 +4,22 @@ import User from "../models/user.model.js";
 
 async function protectRoute(req, res, next) {
   try {
-    // Authentication logic
-    const token = req.cookies.token;
+    let token;
+
+    if (req.headers.authorization?.startsWith("Bearer")) {
+      token = req.headers.authorization.split(" ")[1];
+    } else if (req.headers.cookie) {
+      const allTokens = req.headers.cookie
+        .split(";")
+        .map((c) => c.trim())
+        .filter((c) => c.startsWith("token="))
+        .map((c) => c.replace("token=", ""));
+
+      if (allTokens.length > 0) {
+        token = allTokens[allTokens.length - 1];
+      }
+    }
+
     if (!token) {
       return res
         .status(401)
@@ -13,7 +27,6 @@ async function protectRoute(req, res, next) {
     }
 
     const decode = jwt.verify(token, process.env.JWT_SECRET);
-
     const user = await User.findById(decode.id).select("-password");
 
     if (!user) {
@@ -42,4 +55,12 @@ const validate = (req, res, next) => {
   next();
 };
 
-export { protectRoute, validate };
+const isLoggedIn = (req, res, next) => {
+  if (req.user) {
+    next();
+  } else {
+    res.status(401).json({ message: "Unauthorized" });
+  }
+};
+
+export { protectRoute, validate, isLoggedIn };
