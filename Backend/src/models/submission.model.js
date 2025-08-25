@@ -1,4 +1,3 @@
-import e from "express";
 import mongoose from "mongoose";
 
 const submissionSchema = new mongoose.Schema(
@@ -19,7 +18,7 @@ const submissionSchema = new mongoose.Schema(
     },
     language: {
       type: String,
-      enum: ["javascript", "python", "java", "cpp"],
+      enum: ["python", "java", "cpp"],
       required: true,
     },
     status: {
@@ -33,6 +32,10 @@ const submissionSchema = new mongoose.Schema(
         "compilation_error",
       ],
       default: "pending",
+    },
+    submittedAt: {
+      type: Date,
+      default: Date.now,
     },
     executionTime: {
       type: Number,
@@ -64,6 +67,15 @@ const submissionSchema = new mongoose.Schema(
     passedCases: {
       type: Number,
       default: 0,
+    },
+    isInContest: {
+      type: Boolean,
+      default: false,
+    },
+    verdict: {
+      type: String,
+      required: true,
+      default: "Pending",
     },
   },
   { timestamps: true }
