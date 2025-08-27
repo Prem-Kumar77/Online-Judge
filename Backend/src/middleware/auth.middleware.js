@@ -63,4 +63,12 @@ const isLoggedIn = (req, res, next) => {
   }
 };
 
-export { protectRoute, validate, isLoggedIn };
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === "admin") {
+    next();
+  } else {
+    res.status(403).json({ message: "Forbidden - Admins Only" });
+  }
+};
+
+export { protectRoute, validate, isLoggedIn, isAdmin };

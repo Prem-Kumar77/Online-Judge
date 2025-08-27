@@ -8,6 +8,7 @@ import authRouter from "./routes/auth.route.js";
 import problemRouter from "./routes/problem.route.js";
 import discussionRouter from "./routes/discussion.route.js";
 import submissionRouter from "./routes/submission.route.js";
+import contestRouter from "./routes/contest.route.js";
 
 const app = express();
 dotenv.config();
@@ -19,6 +20,7 @@ app.use("/api/users", userRouter);
 app.use("/api/problems", problemRouter);
 app.use("/api/problems/:problemId/discussions", discussionRouter);
 app.use("/api/submissions", submissionRouter);
+app.use("/api/contests", contestRouter);
 
 app.listen(process.env.PORT, () => {
   connectDB();
